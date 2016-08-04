@@ -18,72 +18,13 @@
 using namespace std;
 using namespace gl;
 
-//  add other callback functions here
-//  later, maybe define class for callback functions
-void glfw_error_callback(int error, const char* description)
-{
-    stringstream ss;
-
-    ss << "GLFW ERROR: code " << error << " msg: " << description << endl;
-
-    GLLogger _logger;
-
-    _logger.error_log(ss.str().c_str());
-}
-
-void update_fps_counter(GLFWwindow* window)
-{
-    static double previous_seconds = glfwGetTime();
-    static int frame_count;
-
-    double current_seconds = glfwGetTime();
-    double elapsed_seconds = current_seconds - previous_seconds;
-
-    if (elapsed_seconds > 0.033)
-    {
-        previous_seconds = current_seconds;
-        double fps = (double)frame_count / elapsed_seconds;
-
-        stringstream ss;
-
-        ss << "Lean GL Manager - FPS: " << fps;
-
-        glfwSetWindowTitle(window, ss.str().c_str());
-    }
-
-}
-
-float* createGrid(int width, int height, float step_x, float step_y)
-{
-    float* patch = new float[width*height * 8];
-
-    int k = 0;
-    for (int i = 0; i <= width - 1; i++)
-        for (int j = 0; j <= height - 1; j++)
-        {
-            patch[k++] = i*step_x;
-            patch[k++] = j*step_y;
-
-            patch[k++] = i*step_x;
-            patch[k++] = j*step_y + step_y;
-
-            patch[k++] = i*step_x + step_x;
-            patch[k++] = j*step_y;
-
-            patch[k++] = i*step_x + step_x;
-            patch[k++] = j*step_y + step_y;
-       }
-
-    return patch;
-}
-
 int main()
 {
     GLLogger _logger;
     
     _logger.time_log();
 
-    glfwSetErrorCallback(glfw_error_callback);
+    glfwSetErrorCallback(GLManager::glfw_error_callback);
 
     if (!glfwInit())
     {
@@ -118,7 +59,10 @@ int main()
     GLRenderer _renderer;
     
     GLManager _manager(_renderer);
-    _manager.createGrid(5, 5, 0.1, 0.1);
+    _manager.createGrid(5, 5, 0.1f, 0.1f);
+
+    _manager.loadTexture("./data/n42_e022_1arc_v3.dds");
+    _manager.loadHeights("./data/n42_e022_3arc_v2_raw.dds");
 
 
     _renderer.addShader(GL_VERTEX_SHADER, "./shaders/minimal.vert");
@@ -131,7 +75,7 @@ int main()
 #pragma region Render Loop
     while (!glfwWindowShouldClose(window))
     {
-        update_fps_counter(window);
+        GLManager::update_fps_counter(window);
 
         _renderer.draw();
 

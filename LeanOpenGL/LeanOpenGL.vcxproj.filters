@@ -45,4 +45,10 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\minimal.vert" />
+    <None Include="Shaders\minimal.frag" />
+    <None Include="Shaders\minimal.tesc" />
+    <None Include="Shaders\minimal.tese" />
+  </ItemGroup>
 </Project>

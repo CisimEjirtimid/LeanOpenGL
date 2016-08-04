@@ -6,8 +6,11 @@
 #include <algorithm>
 
 // OpenGL headers
-#include "GL/glew.h"
-#include "GLFW/glfw3.h"
+#include <glew/glew.h>
+#include <glfw/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <gli/gli.hpp>
 
 // Lean headers
 #include "GLShader.h"
