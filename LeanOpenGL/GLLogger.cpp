@@ -21,11 +21,12 @@ bool GLLogger::time_log()
     {
         time_t current = time(nullptr);
         fs << asctime(localtime(&current)) << endl;
+        cout << asctime(localtime(&current)) << endl;
         return true;
     }
     else
     {
-        cerr << "ERROR: Could not open file" << endl;
+        cerr << "ERROR: Log file not found" << endl;
         return false;
     }
 }
@@ -40,8 +41,22 @@ bool GLLogger::error_log(const char* message)
     }
     else
     {
-        cerr << "ERROR: Could not open file" << endl;
+        cerr << "ERROR: Log file not found" << endl;
         return false;
     }
 }
 
+bool GLLogger::regular_log(const char* message)
+{
+    if (fs.is_open())
+    {
+        fs << message << endl;
+        cout << message << endl;
+        return true;
+    }
+    else
+    {
+        cerr << "ERROR: Log file not found" << endl;
+        return false;
+    }
+}

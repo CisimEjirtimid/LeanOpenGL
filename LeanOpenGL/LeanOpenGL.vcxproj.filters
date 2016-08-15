@@ -44,6 +44,9 @@
     <ClInclude Include="GLManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GLCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\minimal.vert" />

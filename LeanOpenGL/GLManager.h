@@ -23,6 +23,7 @@ namespace gl
     //                    >;
 
     // Class for Callbacks, Object Management, Texture Management etc.
+
     class GLManager
     {
     private:
@@ -41,6 +42,7 @@ namespace gl
         void loadHeights(std::string filename);
 
         // Callbacks, Updates
+        static void __stdcall shader_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param);
         static void glfw_error_callback(int error, const char* description);
         static void update_fps_counter(GLFWwindow* window);
     };

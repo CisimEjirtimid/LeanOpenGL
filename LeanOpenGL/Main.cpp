@@ -21,7 +21,7 @@ using namespace gl;
 int main()
 {
     GLLogger _logger;
-    
+
     _logger.time_log();
 
     glfwSetErrorCallback(GLManager::glfw_error_callback);
@@ -32,6 +32,8 @@ int main()
         return -1;
     }
 
+    // Setting up window hints just before it's creation
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     GLFWwindow* window = glfwCreateWindow(800, 600, "Lean GL Manager", nullptr, nullptr);
 
     if (!window)
@@ -42,10 +44,24 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
-
+    
     glewExperimental = GL_TRUE;
     glewInit();
-    
+
+    if (GLEW_KHR_debug)
+    {
+        const char user_param[] = "Dimitrije";
+
+        _logger.regular_log("KHR_debug extension found");
+        glDebugMessageCallback(GLManager::shader_debug_callback, user_param);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        _logger.regular_log("Debug callback engaged");
+    }
+    else
+    {
+        _logger.error_log("EROOR: KHR_debug extension not found");
+    }
+
     const GLubyte* renderer = glGetString(GL_RENDERER);
     const GLubyte* version = glGetString(GL_VERSION);
 
@@ -57,8 +73,9 @@ int main()
 
 #pragma region Program Body
     GLRenderer _renderer;
-    
+
     GLManager _manager(_renderer);
+
     _manager.createGrid(5, 5, 0.1f, 0.1f);
 
     _manager.loadTexture("./data/n42_e022_1arc_v3.dds");

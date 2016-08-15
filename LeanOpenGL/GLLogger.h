@@ -24,6 +24,7 @@ namespace gl
 
         bool time_log();
         bool error_log(const char* message);
+        bool regular_log(const char* message);
 
     };
 }

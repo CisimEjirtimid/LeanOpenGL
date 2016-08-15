@@ -18,11 +18,11 @@
 namespace gl
 {
     using VAOData = std::tuple<
-                        GLuint              /* VAO           */,
-                        GLenum              /* Mode          */,
-                        std::vector<GLuint> /* VBOs          */,
-                        long                /* # Of Elements */
-                    >;
+        GLuint              /* VAO           */,
+        GLenum              /* Mode          */,
+        std::vector<GLuint> /* VBOs          */,
+        long                /* # Of Elements */
+    >;
 
     class GLRenderer
     {
