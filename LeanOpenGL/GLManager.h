@@ -28,8 +28,8 @@ namespace gl
     {
     private:
 
-        std::vector<float> patch_vector;
-        gli::texture _ground_texture, _ground_heights;
+        std::vector<float> _patch_vertices;
+        std::vector<float> _patch_tex_coords;
 
         GLRenderer& _renderer;
     public:
@@ -37,12 +37,18 @@ namespace gl
         virtual ~GLManager();
 
         // Object/Texture Management
-        void createGrid(int width, int height, float step_x, float step_y);
-        void loadTexture(std::string filename);
-        void loadHeights(std::string filename);
+        void create_grid(int width, int height, float step_x, float step_y);
+        
+        void load_texture(std::string filename);
+        void load_texture(std::string filename, unsigned int width, unsigned int height);
+        
+        void load_heights(std::string filename);
+        void load_heights(std::string filename, unsigned int width, unsigned int height);
 
         // Callbacks, Updates
         static void __stdcall shader_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param);
+
+        static void glfw_keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
         static void glfw_error_callback(int error, const char* description);
         static void update_fps_counter(GLFWwindow* window);
     };

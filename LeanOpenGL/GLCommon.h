@@ -1,12 +1,8 @@
 #pragma once
 
-
-#include <GL/glew.h>
-#include <vector>
-
 namespace gl
 {
-    const char* source_str[] =
+    static const char* source_str[] =
     {
         "Source: API ",
         "Source: WINDOW SYSTEM ",
@@ -16,7 +12,7 @@ namespace gl
         "Source: OTHER "
     };
 
-    const char* type_str[] =
+    static const char* type_str[] =
     {
         "Type: ERROR ",
         "Type: DEPRECATED BEHAVIOUR ",
@@ -26,11 +22,27 @@ namespace gl
         "Type: OTHER "
     };
 
-    const char* severity_str[] =
+    static const char* severity_str[] =
     {
         "Severity: HIGH ",
         "Severity: MEDIUM ",
         "Severity: LOW ",
         "Severity: NOTIFICATION"
+    };
+
+    enum translation_type
+    {
+        MOVE_FORWARD,
+        MOVE_BACKWARD,
+        STRAFE_LEFT,
+        STRAFE_RIGHT
+    };
+
+    enum rotation_type
+    {
+        YAW_LEFT,
+        YAW_RIGHT,
+        PITCH_UP,
+        PITCH_DOWN
     };
 }

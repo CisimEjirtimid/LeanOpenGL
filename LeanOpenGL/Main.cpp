@@ -34,6 +34,7 @@ int main()
 
     // Setting up window hints just before it's creation
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    
     GLFWwindow* window = glfwCreateWindow(800, 600, "Lean GL Manager", nullptr, nullptr);
 
     if (!window)
@@ -75,11 +76,13 @@ int main()
     GLRenderer _renderer;
 
     GLManager _manager(_renderer);
+    glfwSetKeyCallback(window, _manager.glfw_keyboard_callback);
 
-    _manager.createGrid(5, 5, 0.1f, 0.1f);
+    _manager.create_grid(50, 50, 0.5f, 0.5f);
 
-    _manager.loadTexture("./data/n42_e022_1arc_v3.dds");
-    _manager.loadHeights("./data/n42_e022_3arc_v2_raw.dds");
+    _manager.load_texture("./data/n42_e022_1arc_v3.dds");
+    //_manager.load_heights("./data/n42_e022_3arc_v2_raw.dds");
+    _manager.load_heights("./data/n42_e022_3arc_v2.bil", 1201, 1201);
 
 
     _renderer.addShader(GL_VERTEX_SHADER, "./shaders/minimal.vert");
