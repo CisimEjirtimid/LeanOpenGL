@@ -212,9 +212,6 @@ void GLRenderer::draw()
     #pragma endregion
 
 
-
-
-
     #pragma region Collision Detection (Transform Feedback)
     glUniform1i(_uniform_collision_loc, 1);
     glEnable(GL_RASTERIZER_DISCARD);
@@ -270,7 +267,6 @@ void GLRenderer::draw()
     glDisable(GL_RASTERIZER_DISCARD);
     #pragma endregion
 
-    
 
     glUniform1i(_uniform_collision_loc, 0);
 

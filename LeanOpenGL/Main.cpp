@@ -72,6 +72,8 @@ int main()
 
     cout << "Renderer: " << renderer << endl;
     cout << "OpenGL version supported: " << version << endl;
+
+    
 #pragma endregion
 
 #pragma region Program Body
@@ -79,6 +81,7 @@ int main()
 
     GLManager _manager(_renderer);
     glfwSetKeyCallback(window, _manager.glfw_keyboard_callback);
+    glfwSetWindowSizeCallback(window, _manager.glfw_window_size_callback);
 
     _manager.create_grid(1201, 1201, 70.f, 90.f);
     _manager.load_texture("./data/n42_e022_1arc_v3.jpg");

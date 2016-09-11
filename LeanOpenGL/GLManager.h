@@ -47,6 +47,7 @@ namespace gl
         static void __stdcall shader_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param);
 
         static void glfw_keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+        static void glfw_window_size_callback(GLFWwindow* window, int width, int height);
         static void glfw_error_callback(int error, const char* description);
         static void update_fps_counter(GLFWwindow* window);
     };
