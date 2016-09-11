@@ -33,6 +33,7 @@ float GLRenderer::_tesc_inner = 2.0;
 
 // Wireframe control static
 bool GLRenderer::_wireframe = false;
+vec3 GLRenderer::_wireframe_color = vec3(0.0, 0.0, 0.0);
 
 GLRenderer::GLRenderer()
     : _programme(glCreateProgram())
@@ -206,6 +207,7 @@ void GLRenderer::draw()
     
     // wireframe uniform
     glUniform1i(_uniform_draw_wireframe_loc, _wireframe);
+    glUniform3fv(_uniform_wireframe_color_loc, 1, value_ptr(_wireframe_color));
 
     // camera position uniform
     glUniform3fv(_uniform_camera_position_loc, 1, value_ptr(_camera_position));
@@ -352,8 +354,8 @@ void GLRenderer::finish_init()
     _uniform_tesc_inner_loc = glGetUniformLocation(_programme, "tesc_inner");
 
     _uniform_win_scale_loc = glGetUniformLocation(_programme, "win_scale");
-
     _uniform_draw_wireframe_loc = glGetUniformLocation(_programme, "draw_wireframe");
+    _uniform_wireframe_color_loc = glGetUniformLocation(_programme, "wireframe_color");
 
     _uniform_camera_position_loc = glGetUniformLocation(_programme, "camera_position");
     _uniform_collision_loc = glGetUniformLocation(_programme, "collision");
@@ -376,6 +378,15 @@ void GLRenderer::set_window_size(GLFWwindow* window)
 
 void GLRenderer::invert_wireframe()
 {
+    if (!_wireframe)
+    {
+        float r = (float)(rand() % 256) / 256.f;
+        float g = (float)(rand() % 256) / 256.f;
+        float b = (float)(rand() % 256) / 256.f;
+
+        _wireframe_color = vec3(r, g, b);
+    }
+
     _wireframe = !_wireframe;
 }
 

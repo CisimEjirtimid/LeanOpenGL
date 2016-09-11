@@ -55,6 +55,7 @@ namespace gl
         // wireframe uniforms
         GLint _uniform_win_scale_loc;
         GLint _uniform_draw_wireframe_loc;
+        GLint _uniform_wireframe_color_loc;
 
         // collision detection
         GLint _uniform_camera_position_loc;
@@ -78,6 +79,8 @@ namespace gl
 
         glm::vec2 _window_size;
         static bool _wireframe;
+
+        static glm::vec3 _wireframe_color;
 
         float* _feedback;
 

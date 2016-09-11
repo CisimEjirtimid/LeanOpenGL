@@ -3,6 +3,7 @@
 out vec4 frag_colour;
 
 uniform int draw_wireframe;
+uniform vec3 wireframe_color;
 
 uniform sampler2D terrain;
 
@@ -27,5 +28,5 @@ void main()
         edge_intensity = exp2(-1.0*near_edge*near_edge);
     }
 
-    frag_colour = (edge_intensity * vec4(0.1, 0.1, 0.1, 1.0)) + ((1.0 - edge_intensity) * vec4(tex_color.rgb, 1.0));
+    frag_colour = (edge_intensity * vec4(wireframe_color, 1.0)) + ((1.0 - edge_intensity) * vec4(tex_color.rgb, 1.0));
 }
