@@ -53,5 +53,6 @@
     <None Include="Shaders\minimal.frag" />
     <None Include="Shaders\minimal.tesc" />
     <None Include="Shaders\minimal.tese" />
+    <None Include="shaders\minimal.geom" />
   </ItemGroup>
 </Project>

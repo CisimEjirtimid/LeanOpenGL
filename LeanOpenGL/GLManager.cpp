@@ -17,58 +17,47 @@ GLManager::~GLManager()
 
 void GLManager::create_grid(int width, int height, float step_x, float step_y)
 {
-    for (int i = 0; i <= width - 1; i++)
+    for (int i = 0; i < width; i++)
     {
-        for (int j = 0; j <= height - 1; j++)
+        for (int j = 0; j < height; j++)
         {
             //  1st vertex
             _patch_vertices.push_back(i*step_x);
             _patch_vertices.push_back(j*step_y);
 
-            _patch_tex_coords.push_back(i);
-            _patch_tex_coords.push_back(j);
+            _patch_tex_coords.push_back((float)i / (float)width);
+            _patch_tex_coords.push_back((float)j / (float)height);
 
             //  2nd vertex
             _patch_vertices.push_back(i*step_x);
             _patch_vertices.push_back(j*step_y + step_y);
 
-            _patch_tex_coords.push_back(i);
-            _patch_tex_coords.push_back(j + 1);
+            _patch_tex_coords.push_back((float)i / (float)width);
+            _patch_tex_coords.push_back((float)(j + 1) / (float)height);
 
             //  3rd vertex
             _patch_vertices.push_back(i*step_x + step_x);
             _patch_vertices.push_back(j*step_y);
 
-            _patch_tex_coords.push_back(i + 1);
-            _patch_tex_coords.push_back(j);
+            _patch_tex_coords.push_back((float)(i + 1) / (float)width);
+            _patch_tex_coords.push_back((float)j / (float)height);
 
             //  4th vertex
             _patch_vertices.push_back(i*step_x + step_x);
             _patch_vertices.push_back(j*step_y + step_y);
 
-            _patch_tex_coords.push_back(i + 1);
-            _patch_tex_coords.push_back(j + 1);
+            _patch_tex_coords.push_back((float)(i + 1) / (float)width);
+            _patch_tex_coords.push_back((float)(j + 1) / (float)height);
         }
     }
 
     _renderer.add_object(_patch_vertices.size() * sizeof(float), _patch_vertices.data(), GL_PATCHES, 2);
-    _renderer.add_tex_coords(_patch_vertices.size() * sizeof(float), _patch_tex_coords.data());
+    _renderer.add_tex_coords(_patch_vertices.size() * sizeof(float), _patch_tex_coords.data()); // adding tex_coords, although i do not use them anywhere
 }
 
 void GLManager::load_texture(std::string filename)
 {
     _renderer.load_texture(filename);
-}
-
-void GLManager::load_texture(std::string filename, unsigned width, unsigned height)
-{
-    
-}
-
-
-void GLManager::load_heights(std::string filename)
-{
-    _renderer.load_heights(filename);
 }
 
 void GLManager::load_heights(std::string filename, unsigned width, unsigned height)
@@ -85,9 +74,12 @@ void __stdcall GLManager::shader_debug_callback(GLenum source, GLenum type, GLui
     // Severity message correction, see https://www.opengl.org/registry/specs/KHR/debug.txt for explanation on severity tokens
     unsigned int severity_i = severity >= 0x9146 ? severity - 0x9146 : severity - 0x826B + 3;
 
+    if (severity_i == 3) // Severity == NOTIFICATION
+        return;
+
     stringstream ss;
-    ss << source_str[source_i] << type_str[type_i] << id << " " << severity_str[severity_i]
-        << " Message length: " << length << " Message: " << message << " " << (user_param != nullptr ? *(char*)user_param : *(char*)" ") << endl;
+    ss << source_str[source_i] << endl << type_str[type_i] << endl << "ID: " << id << endl << severity_str[severity_i] << endl
+        << "Message: " << message << endl; // << (user_param != nullptr ? *(char*)user_param : *(char*)" ") << endl;
 
     GLLogger _logger;
 
@@ -99,6 +91,21 @@ void GLManager::glfw_keyboard_callback(GLFWwindow* window, int key, int scancode
     if (action == GLFW_PRESS || action == GLFW_REPEAT)
         switch (key)
         {
+            // Tesselation control
+        case GLFW_KEY_KP_ADD:
+            GLRenderer::increase_tesc_outer();
+            GLRenderer::increase_tesc_inner();
+            break;
+        case GLFW_KEY_KP_SUBTRACT:
+            GLRenderer::decrease_tesc_outer();
+            GLRenderer::decrease_tesc_inner();
+            break;
+
+            // Wireframe control
+        case GLFW_KEY_TAB:
+            GLRenderer::invert_wireframe();
+            break;
+
             // Translation
         case GLFW_KEY_W:
             GLRenderer::translate_camera(MOVE_FORWARD);
@@ -156,11 +163,18 @@ void GLManager::update_fps_counter(GLFWwindow* window)
         previous_seconds = current_seconds;
         double fps = (double)frame_count / elapsed_seconds;
 
+        frame_count = 0;
+
         stringstream ss;
 
         ss << "Lean GL Manager - FPS: " << fps;
 
         glfwSetWindowTitle(window, ss.str().c_str());
     }
+    else
+    {
+        frame_count++;
+    }
 
+    
 }

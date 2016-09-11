@@ -20,6 +20,7 @@ using namespace gl;
 
 int main()
 {
+#pragma region Context Init
     GLLogger _logger;
 
     _logger.time_log();
@@ -71,6 +72,7 @@ int main()
 
     cout << "Renderer: " << renderer << endl;
     cout << "OpenGL version supported: " << version << endl;
+#pragma endregion
 
 #pragma region Program Body
     GLRenderer _renderer;
@@ -78,19 +80,21 @@ int main()
     GLManager _manager(_renderer);
     glfwSetKeyCallback(window, _manager.glfw_keyboard_callback);
 
-    _manager.create_grid(50, 50, 0.5f, 0.5f);
-
-    _manager.load_texture("./data/n42_e022_1arc_v3.dds");
-    //_manager.load_heights("./data/n42_e022_3arc_v2_raw.dds");
+    _manager.create_grid(1201, 1201, 70.f, 90.f);
+    _manager.load_texture("./data/n42_e022_1arc_v3.jpg");
     _manager.load_heights("./data/n42_e022_3arc_v2.bil", 1201, 1201);
 
+    _renderer.set_window_size(window);
 
-    _renderer.addShader(GL_VERTEX_SHADER, "./shaders/minimal.vert");
-    _renderer.addShader(GL_FRAGMENT_SHADER, "./shaders/minimal.frag");
-    _renderer.addShader(GL_TESS_CONTROL_SHADER, "./shaders/minimal.tesc");
-    _renderer.addShader(GL_TESS_EVALUATION_SHADER, "./shaders/minimal.tese");
+    _renderer.add_shader(GL_VERTEX_SHADER, "./shaders/minimal.vert");
+    _renderer.add_shader(GL_TESS_CONTROL_SHADER, "./shaders/minimal.tesc");
+    _renderer.add_shader(GL_TESS_EVALUATION_SHADER, "./shaders/minimal.tese");
+    _renderer.add_shader(GL_GEOMETRY_SHADER, "./shaders/minimal.geom");
+    _renderer.add_shader(GL_FRAGMENT_SHADER, "./shaders/minimal.frag");
 
-    _renderer.finishInit();
+    _renderer.finish_init();
+
+    _renderer.enable_transform_feedback();
 
 #pragma region Render Loop
     while (!glfwWindowShouldClose(window))

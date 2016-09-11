@@ -40,9 +40,7 @@ namespace gl
         void create_grid(int width, int height, float step_x, float step_y);
         
         void load_texture(std::string filename);
-        void load_texture(std::string filename, unsigned int width, unsigned int height);
-        
-        void load_heights(std::string filename);
+
         void load_heights(std::string filename, unsigned int width, unsigned int height);
 
         // Callbacks, Updates

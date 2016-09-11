@@ -2,67 +2,56 @@
 
 layout(quads, equal_spacing , ccw) in;
 
-out vec4 ex_Color;
-void main() {
-	float u = gl_TessCoord.x;
-	float omu = 1 - u;
-	float v = gl_TessCoord.y;
-	float omv = 1 - v;
-	ex_Color = vec4(1, 0, 0, 1);
-	vec4 a = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);
-	vec4 b = mix(gl_in[2].gl_Position, gl_in[3].gl_Position, gl_TessCoord.x);
-	vec4 p = mix(a, b, gl_TessCoord.y);
-	gl_Position = p;
+uniform int collision;
+
+//uniform isampler2D heights;
+uniform mat4 pvm_matrix;
+uniform mat4 vm_matrix;
+
+uniform vec2 terrain_size; // in patches
+uniform vec2 patch_size;
+
+in tesc_data
+{
+    vec3 color;
+} in_data[];
+
+out tese_data
+{
+    vec3 color; // debugging
+    vec2 tex_coord;
+} out_data;
+
+void main()
+{
+    float u = gl_TessCoord.x;
+    float v = gl_TessCoord.y;
+
+    vec4 a = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, u);
+    vec4 b = mix(gl_in[2].gl_Position, gl_in[3].gl_Position, u);
+    vec4 p = mix(a, b, v);
+
+    float tex_coord_s = p.x / (terrain_size.x * patch_size.x);
+    float tex_coord_t = p.z / (terrain_size.y * patch_size.y);
+
+    out_data.tex_coord = vec2(tex_coord_s, tex_coord_t);
+
+    //vec4 height = texture(heights, vec2(tex_coord_s, tex_coord_t));
+    //p.y = height.r;
+
+    if (collision > 0)
+    {
+        gl_Position = p;
+    }
+    else
+    {
+        gl_Position = pvm_matrix * p;
+    }
+
+    vec3 a_color = mix(in_data[0].color, in_data[1].color, u);
+    vec3 b_color = mix(in_data[2].color, in_data[3].color, u);
+
+    out_data.color = mix(a_color, b_color, v);
+
+    out_data.color = vec3(tex_coord_s, tex_coord_t, 0);
 }
-
-
-//void main()
-//{
-//	 float u = gl_TessCoord.x;
-//	 float v = gl_TessCoord.y;
-//
-//	 vec4 p0 = gl_in[0].gl_Position;
-//	 vec4 p1 = gl_in[1].gl_Position;
-//	 vec4 p2 = gl_in[2].gl_Position;
-//	 vec4 p3 = gl_in[3].gl_Position;
-//
-//	 vec4 a = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, u);
-//	 vec4 b = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, u);
-//	 // Linear interpolation
-//
-//	 gl_Position = mix(a, b, v);
-//
-//	//vec4 p0 = gl_in[0].gl_Position;
-//	//vec4 p1 = gl_in[1].gl_Position;
-//	//vec4 p2 = gl_in[2].gl_Position;
-//
-//	//vec3 p = gl_TessCoord.xyz;
-//
-//	//gl_Position = vec4 (p0*p.x + p1*p.y + p2*p.z);
-//
-////gl_Position = vec4(gl_in[0].gl_Position.xyz * gl_TessCoord.x + gl_in[1].gl_Position.xyz * gl_TessCoord.y + gl_in[2].gl_Position.xyz * gl_TessCoord.z + 1.0, 1.0);
-//}
-
-
-
-
-
-
-//layout(triangles, equal_spacing, ccw) in;
-//void main()
-//{
-// float u = gl_TessCoord.x;
-// float v = gl_TessCoord.y;
-//  float z = gl_TessCoord.z;
-
-// vec4 p0 = gl_in[0].gl_Position;
-// vec4 p1 = gl_in[1].gl_Position;
-// vec4 p2 = gl_in[2].gl_Position;
-// vec4 p3 = gl_in[3].gl_Position;
-
-// vec4 a = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, u);
-// vec4 b = mix(gl_in[1].gl_Position, gl_in[2].gl_Position, u);
-// // Linear interpolation
-
-// gl_Position = mix(a, b, v);
-//}

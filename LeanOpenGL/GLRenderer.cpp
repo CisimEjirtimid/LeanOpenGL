@@ -1,34 +1,52 @@
 #include "GLRenderer.h"
 #include "GLCommon.h"
 
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/raw_data.hpp>
+#include <gli/gli.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 using namespace std;
 using namespace gl;
-using namespace gli;
 using namespace glm;
 
 // Declaration of static variables
 
 // Camera statics
-vec3 GLRenderer::_camera_position = vec3(5.f, 5.f, 5.f);
-vec3 GLRenderer::_camera_direction = normalize(vec3(0.f, 0.f, 0.f) - _camera_position);
+vec3 GLRenderer::_camera_position = vec3(0.f, 1000.f, 0.f);
+vec3 GLRenderer::_camera_direction = normalize(vec3(1000.f, 0.f, 1000.f) - _camera_position);
 vec3 GLRenderer::_camera_up = vec3(0.f, 1.f, 0.f);
 
 // PVM matrix statics
-mat4 GLRenderer::_perspective_matrix = perspective(45.f, 4.f / 3.f, 0.1f, 100.f);
+mat4 GLRenderer::_perspective_matrix = perspective(45.f, 4.f / 3.f, 0.1f, 1000000.f);
 mat4 GLRenderer::_view_matrix = lookAt(_camera_position, _camera_position + _camera_direction , _camera_up);
 mat4 GLRenderer::_model_matrix = mat4(1.f);
 
 mat4 GLRenderer::_pvm_matrix = _perspective_matrix * _view_matrix * _model_matrix;
 
+// Tesc parameter statics
+float GLRenderer::_tesc_outer = 2.0;
+float GLRenderer::_tesc_inner = 2.0;
+
+// Wireframe control static
+bool GLRenderer::_wireframe = false;
+
 GLRenderer::GLRenderer()
     : _programme(glCreateProgram())
     , _objects()
 {
+    _feedback = new GLfloat[12];
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 }
 
 GLRenderer::~GLRenderer()
 {
-    
+    delete _feedback;
 }
 
 void GLRenderer::add_object(int size_in_bytes, float* points, GLenum mode, int attribs_per_point, GLenum type, GLenum usage)
@@ -79,26 +97,38 @@ void GLRenderer::add_tex_coords(int size_in_bytes, void* tex_coords, int attribs
     // there's no adding to _objects vector, because we are changing the state of the last added object
 }
 
+void GLRenderer::enable_transform_feedback()
+{
+    glGenBuffers(1, &tbo);
+    glBindBuffer(GL_ARRAY_BUFFER, tbo);
+    glBufferData(GL_ARRAY_BUFFER, 12 * 4, nullptr, GL_STATIC_READ); // sizeof
+
+    glGenQueries(1, &query);
+}
+
 void GLRenderer::load_texture(std::string filename)
 {
-    texture2d ground_texture(load(filename.c_str()));
+    GLuint texture;
 
-    if (ground_texture.empty())
-        return;
-}
+    glGenTextures(1, &texture);
 
-void GLRenderer::load_texture(std::string filename, unsigned width, unsigned height)
-{
+    glBindTexture(GL_TEXTURE_2D, texture);
 
-}
+    _textures.push_back(texture);
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-void GLRenderer::load_heights(std::string filename)
-{
-    texture2d ground_heights(load(filename.c_str()));
+    int x, y, comp;
+    unsigned char* data = stbi_load(filename.c_str(), &x, &y, &comp, STBI_rgb);
 
-    if (ground_heights.empty())
-        return;
+    // build our texture mipmaps
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    // free buffer
+    stbi_image_free(data);
 }
 
 void GLRenderer::load_heights(std::string filename, unsigned width, unsigned height)
@@ -113,8 +143,10 @@ void GLRenderer::load_heights(std::string filename, unsigned width, unsigned hei
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    short *data;
+    byte *data;
     FILE *file;
 
     // open texture data
@@ -128,14 +160,14 @@ void GLRenderer::load_heights(std::string filename, unsigned width, unsigned hei
     rewind(file);
 
     // allocate buffer
-    data = static_cast<short*>(malloc(sizeof(short) * size));
+    data = static_cast<byte*>(malloc(sizeof(byte) * size));
 
     // read texture data
-    long result = fread(data, sizeof(short), size, file);
+    long result = fread(data, sizeof(byte), size, file);
     fclose(file);
 
     // build our texture mipmaps
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_SHORT, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16I, width, height, 0, GL_RED_INTEGER, GL_SHORT, data);
 
     // free buffer
     free(data);
@@ -147,12 +179,51 @@ void GLRenderer::draw()
 
     glUseProgram(_programme);
 
+    #pragma region Uniform Setup
     // setup the textures for sampling from the shaders
-    glUniform1i(uniform_heights_loc, 0); // texture unit 0 is for heights
+    glUniform1i(_uniform_heights_loc, 0); // texture unit 0 is for heights
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _textures.back());
+    glBindTexture(GL_TEXTURE_2D, _textures[1]);
 
-    glUniformMatrix4fv(uniform_pvm_matrix_loc, 1, GL_FALSE, value_ptr(_pvm_matrix));
+    glUniform1i(_uniform_terrain_loc, 2); // texture unit 2 is for terrain
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, _textures[0]);
+
+    // pvm matrix uniform
+    glUniformMatrix4fv(_uniform_pvm_matrix_loc, 1, GL_FALSE, value_ptr(_pvm_matrix));
+    glUniformMatrix4fv(_uniform_vm_matrix_loc, 1, GL_FALSE, value_ptr(_view_matrix * _model_matrix));
+    
+    // patch and terrain size uniforms
+    glUniform2f(_uniform_terrain_size_loc, 1200.f, 1200.f);
+    glUniform2f(_uniform_patch_size_loc, 70.f, 90.f);
+
+    // tesselation parameters uniforms
+    glUniform1f(_uniform_tesc_outer_loc, _tesc_outer);
+    glUniform1f(_uniform_tesc_inner_loc, _tesc_inner);
+
+    // window scale uniform
+    glUniform2fv(_uniform_win_scale_loc, 1, value_ptr(_window_size));
+    
+    // wireframe uniform
+    glUniform1i(_uniform_draw_wireframe_loc, _wireframe);
+
+    // camera position uniform
+    glUniform3fv(_uniform_camera_position_loc, 1, value_ptr(_camera_position));
+    #pragma endregion
+
+
+
+
+
+    #pragma region Collision Detection (Transform Feedback)
+    glUniform1i(_uniform_collision_loc, 1);
+    glEnable(GL_RASTERIZER_DISCARD);
+    
+    // TODO: parametrize call of transform feedback (different tbo for every object)
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+
+    glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, query);
+    glBeginTransformFeedback(GL_TRIANGLES);
 
     for_each(_objects.begin(), _objects.end(),
         [](VAOData& t)
@@ -163,9 +234,56 @@ void GLRenderer::draw()
     });
 
     glBindVertexArray(0);
+
+    glEndTransformFeedback();
+    glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
+
+    glFlush();
+
+    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 3 * sizeof(glm::vec4), _feedback);
+
+    GLuint primitives;
+    glGetQueryObjectuiv(query, GL_QUERY_RESULT, &primitives);
+
+    cout << primitives << " primitives written." << endl << endl;
+
+    if (primitives > 0)
+    {
+        float t = _feedback[0];
+        float tc = _feedback[1];
+        float s = _feedback[2];
+
+        float diff = _feedback[4];
+
+        cout << t << " " << tc << " " << s << " " << diff << endl << endl;
+        cout << " Camera colided with terrain!" << endl << endl;
+
+        vec3 hit = normalize(_camera_position) * t;
+
+        cout << hit.x << " " << hit.y << " " << hit.z << endl << endl;
+        cout << _camera_position.x << " " << _camera_position.y << " " << _camera_position.z << endl << endl;
+
+        _camera_position.y *= 1.1f;
+
+        update_camera();
+    }
+    glDisable(GL_RASTERIZER_DISCARD);
+    #pragma endregion
+
+    
+
+    glUniform1i(_uniform_collision_loc, 0);
+
+    for_each(_objects.begin(), _objects.end(),
+        [](VAOData& t)
+    {
+        glBindVertexArray(get<0>(t));
+
+        glDrawArrays(get<1>(t), 0, get<3>(t));
+    });
 }
 
-void GLRenderer::addShader(GLenum shaderType, string fileName)
+void GLRenderer::add_shader(GLenum shaderType, string fileName)
 {
     GLShader shader(shaderType);
 
@@ -174,46 +292,114 @@ void GLRenderer::addShader(GLenum shaderType, string fileName)
     shader.load(fileName);
     shader.compile();
 
+    GLint isCompiled = 0;
+
+    glGetShaderiv(shader.getID(), GL_COMPILE_STATUS, &isCompiled);
+
+    if (isCompiled == GL_FALSE)
+    {
+        std::cout << "Error compiling shader " << fileName << "!" << std::endl;
+        GLint maxLength = 0;
+        glGetShaderiv(shader.getID(), GL_INFO_LOG_LENGTH, &maxLength);
+
+        std::vector<GLchar> errorLog(maxLength);
+        glGetShaderInfoLog(shader.getID(), maxLength, &maxLength, &errorLog[0]);
+
+        std::string error(errorLog.begin(), errorLog.end());
+        std::cout << error << std::endl;
+
+        glDeleteShader(shader.getID());
+        return;
+    }
+
     glAttachShader(_programme, shader.getID());
 }
 
-void GLRenderer::finishInit()
+void GLRenderer::finish_init()
 {
+    const GLchar* _feedback_varyings[] = { "gl_Position" };
+    glTransformFeedbackVaryings(_programme, 1, _feedback_varyings, GL_INTERLEAVED_ATTRIBS);
+
     glLinkProgram(_programme);
 
-    //  get uniform locations from shaders
-    uniform_heights_loc = glGetUniformLocation(_programme, "heights");
-    uniform_texture_loc = glGetUniformLocation(_programme, "texture");
-    uniform_pvm_matrix_loc = glGetUniformLocation(_programme, "pvm_matrix");
+    GLint isLinked = 0;
+
+    glGetProgramiv(_programme, GL_LINK_STATUS, &isLinked);
+    
+    if (isLinked == GL_FALSE)
+    {
+        std::cout << "Error linking program!" << std::endl;
+        GLint maxLength = 0;
+        glGetProgramiv(_programme, GL_INFO_LOG_LENGTH, &maxLength);
+
+        std::vector<GLchar> errorLog(maxLength);
+        glGetProgramInfoLog(_programme, maxLength, &maxLength, &errorLog[0]);
+
+        std::string error(errorLog.begin(), errorLog.end());
+        std::cout << error << std::endl;
+
+        glDeleteProgram(_programme);
+        return;
+    }
+
+    #pragma region Shader Uniform Locations
+    _uniform_heights_loc = glGetUniformLocation(_programme, "heights");
+    _uniform_terrain_loc = glGetUniformLocation(_programme, "terrain");
+
+    _uniform_pvm_matrix_loc = glGetUniformLocation(_programme, "pvm_matrix");
+    _uniform_vm_matrix_loc = glGetUniformLocation(_programme, "vm_matrix");
+
+    _uniform_terrain_size_loc = glGetUniformLocation(_programme, "terrain_size");
+    _uniform_patch_size_loc = glGetUniformLocation(_programme, "patch_size");
+
+    _uniform_tesc_outer_loc = glGetUniformLocation(_programme, "tesc_outer");
+    _uniform_tesc_inner_loc = glGetUniformLocation(_programme, "tesc_inner");
+
+    _uniform_win_scale_loc = glGetUniformLocation(_programme, "win_scale");
+
+    _uniform_draw_wireframe_loc = glGetUniformLocation(_programme, "draw_wireframe");
+
+    _uniform_camera_position_loc = glGetUniformLocation(_programme, "camera_position");
+    _uniform_collision_loc = glGetUniformLocation(_programme, "collision");
+    #pragma endregion
 
     glEnable(GL_DEPTH_TEST);
-    
     glDepthFunc(GL_LESS);
     
     glPatchParameteri(GL_PATCH_VERTICES, 4);
 
-    glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+    glClearColor(0.2f, 0.7f, 1.0f, 1.0f);
+}
 
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+void GLRenderer::set_window_size(GLFWwindow* window)
+{
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    _window_size = vec2(static_cast<float>(width), static_cast<float>(height));
+}
+
+void GLRenderer::invert_wireframe()
+{
+    _wireframe = !_wireframe;
 }
 
 void GLRenderer::translate_camera(int translate_direction)
 {
-
+    float speed = 100.f;
 
     switch (translate_direction)
     {
     case MOVE_FORWARD:
-        _camera_position += _camera_direction;
+        _camera_position += speed * _camera_direction;
         break;
     case MOVE_BACKWARD:
-        _camera_position -= _camera_direction;
+        _camera_position -= speed * _camera_direction;
         break;
     case STRAFE_LEFT:
-        _camera_position += normalize(cross(_camera_direction, _camera_up));
+        _camera_position -= speed * normalize(cross(_camera_direction, _camera_up));
         break;
     case STRAFE_RIGHT:
-        _camera_position -= normalize(cross(_camera_direction, _camera_up));
+        _camera_position += speed * normalize(cross(_camera_direction, _camera_up));
         break;
     }
 }
@@ -244,4 +430,24 @@ void GLRenderer::update_camera()
 {
     _view_matrix = lookAt(_camera_position, _camera_position + _camera_direction, _camera_up);
     _pvm_matrix = _perspective_matrix * _view_matrix * _model_matrix;
+}
+
+void GLRenderer::increase_tesc_outer()
+{
+    _tesc_outer += 0.5f;
+}
+
+void GLRenderer::increase_tesc_inner()
+{
+    _tesc_inner += 0.5f;
+}
+
+void GLRenderer::decrease_tesc_outer()
+{
+    _tesc_outer -= 0.5f;
+}
+
+void GLRenderer::decrease_tesc_inner()
+{
+    _tesc_inner -= 0.5f;
 }

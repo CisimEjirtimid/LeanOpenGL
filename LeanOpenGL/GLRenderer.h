@@ -11,9 +11,6 @@
 
 #include <glm/fwd.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-#include <gli/gli.hpp>
 
 
 // Lean headers
@@ -36,11 +33,32 @@ namespace gl
         std::vector<VAOData> _objects;
         std::vector<GLuint> _textures;
 
-        gli::texture _ground_texture, _ground_heights;
+        GLuint tbo;
+        GLuint query;
 
-        GLint uniform_heights_loc;
-        GLint uniform_texture_loc;
-        GLint uniform_pvm_matrix_loc;
+        // samplers
+        GLint _uniform_heights_loc;
+        GLint _uniform_terrain_loc;
+        
+        // mat4
+        GLint _uniform_pvm_matrix_loc;
+        GLint _uniform_vm_matrix_loc;
+
+        // vec2
+        GLint _uniform_terrain_size_loc;
+        GLint _uniform_patch_size_loc;
+
+        // tess control
+        GLint _uniform_tesc_outer_loc;
+        GLint _uniform_tesc_inner_loc;
+        
+        // wireframe uniforms
+        GLint _uniform_win_scale_loc;
+        GLint _uniform_draw_wireframe_loc;
+
+        // collision detection
+        GLint _uniform_camera_position_loc;
+        GLint _uniform_collision_loc;
 
         static glm::mat4 _perspective_matrix;
         static glm::mat4 _view_matrix;
@@ -55,10 +73,17 @@ namespace gl
         static glm::vec3 _camera_pitch_axis;
         static glm::vec3 _camera_yaw_axis;
 
+        static float _tesc_outer;
+        static float _tesc_inner;
+
+        glm::vec2 _window_size;
+        static bool _wireframe;
+
+        float* _feedback;
+
     public:
         GLRenderer();
         ~GLRenderer();
-
 
         /*
             Function add_object intializes adding of new object, 
@@ -71,27 +96,36 @@ namespace gl
             location 1 = tex_coords
 
             TO DO:
-            set vertex variable layout to reperesent the order of the function calling
+                - set vertex variable layout to reperesent the order of the function calling
+                - implement add_colours & add_normals functions
         */
         void add_object(int size_in_bytes, float* points, GLenum mode, int attribs_per_point = 3, GLenum type = GL_FLOAT, GLenum usage = GL_STATIC_DRAW);
         void add_colours(int size_in_bytes, void* colours, int attribs_per_colour = 3, GLenum type = GL_FLOAT, GLenum usage = GL_STATIC_DRAW);
         void add_normals(int size_in_bytes, void* normals, int attribs_per_normal = 3, GLenum type = GL_FLOAT, GLenum usage = GL_STATIC_DRAW);
         void add_tex_coords(int size_in_bytes, void* tex_coords, int attribs_per_tex_coord = 2, GLenum type = GL_FLOAT, GLenum usage = GL_STATIC_DRAW);
 
+        void enable_transform_feedback();
+
         void load_texture(std::string filename);
-        void load_texture(std::string filename, unsigned int width, unsigned int height);
-
-        void load_heights(std::string filename);
         void load_heights(std::string filename, unsigned int width, unsigned int height);
-
+        
+        void set_window_size(GLFWwindow* window);
+        
         void draw();
 
-        void addShader(GLenum shaderType, std::string fileName);
+        void add_shader(GLenum shaderType, std::string fileName);
 
-        void finishInit();
+        void finish_init();
 
+        static void invert_wireframe();
         static void translate_camera(int translate_direction);
         static void rotate_camera(int rotate_direction);
         static void update_camera();
+
+        static void increase_tesc_outer();
+        static void increase_tesc_inner();
+
+        static void decrease_tesc_outer();
+        static void decrease_tesc_inner();
     };
 }
