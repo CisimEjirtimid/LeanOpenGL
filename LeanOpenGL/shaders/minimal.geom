@@ -23,6 +23,7 @@ out geom_data
 
 noperspective out vec3 dist;
 
+// taken from 'Fast, Minimum Storage Ray / Triangle Intersection'
 int triangle_intersection(in vec3   V1,  // Triangle vertices
                             in vec3   V2,
                             in vec3   V3,

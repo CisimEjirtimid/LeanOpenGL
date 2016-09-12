@@ -31,6 +31,9 @@ mat4 GLRenderer::_pvm_matrix = _perspective_matrix * _view_matrix * _model_matri
 float GLRenderer::_tesc_outer = 2.0;
 float GLRenderer::_tesc_inner = 2.0;
 
+// Window size statics
+vec2 GLRenderer::_window_size = vec2(800, 600);
+
 // Wireframe control static
 bool GLRenderer::_wireframe = false;
 vec3 GLRenderer::_wireframe_color = vec3(0.0, 0.0, 0.0);
@@ -374,6 +377,10 @@ void GLRenderer::set_window_size(GLFWwindow* window)
     int width, height;
     glfwGetWindowSize(window, &width, &height);
     _window_size = vec2(static_cast<float>(width), static_cast<float>(height));
+
+    _perspective_matrix = perspective(45.f, (float)width / (float)height, 0.1f, 1000000.f);
+
+    update_camera();
 }
 
 void GLRenderer::invert_wireframe()

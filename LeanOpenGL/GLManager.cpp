@@ -142,6 +142,7 @@ void GLManager::glfw_keyboard_callback(GLFWwindow* window, int key, int scancode
 void GLManager::glfw_window_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    GLRenderer::set_window_size(window);
 }
 
 void GLManager::glfw_error_callback(int error, const char* description)

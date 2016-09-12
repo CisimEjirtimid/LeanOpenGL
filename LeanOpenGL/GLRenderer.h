@@ -77,7 +77,7 @@ namespace gl
         static float _tesc_outer;
         static float _tesc_inner;
 
-        glm::vec2 _window_size;
+        static glm::vec2 _window_size;
         static bool _wireframe;
 
         static glm::vec3 _wireframe_color;
@@ -112,7 +112,7 @@ namespace gl
         void load_texture(std::string filename);
         void load_heights(std::string filename, unsigned int width, unsigned int height);
         
-        void set_window_size(GLFWwindow* window);
+        
         
         void draw();
 
@@ -124,6 +124,8 @@ namespace gl
         static void translate_camera(int translate_direction);
         static void rotate_camera(int rotate_direction);
         static void update_camera();
+
+        static void set_window_size(GLFWwindow* window);
 
         static void increase_tesc_outer();
         static void increase_tesc_inner();
