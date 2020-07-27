@@ -1,4 +1,4 @@
-**3D grafički protočni sistemi
+**3D grafički protočni sistemi**
 
 Zadaci:
 * Učitati podatke o visinama u teksturu. (Podaci o visinama mogu se učitati u jednokanalnu 16-bitnu teksturu)
